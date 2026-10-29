@@ -1,0 +1,976 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="A thoughtfully designed weather dashboard with current conditions, local time, sunrise, sunset, and a six-day forecast."
+    >
+
+    <meta name="theme-color" content="#E9E5D8">
+
+    <title>Weather Journal</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+
+<body>
+    <div class="page-shell">
+
+        <!-- Header -->
+        <header class="site-header">
+            <a class="brand" href="/" aria-label="Weather Journal home">
+                <span class="brand-mark" aria-hidden="true">W.</span>
+
+                <span class="brand-copy">
+                    <span class="brand-name">Weather Journal</span>
+                    <span class="brand-subtitle">A study of the sky</span>
+                </span>
+            </a>
+
+            <div class="header-note">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span>Live weather observations</span>
+            </div>
+        </header>
+
+
+        <!-- City search -->
+        <main id="main-content">
+            <section class="search-section" aria-labelledby="search-heading">
+
+                <div class="section-intro">
+                    <p class="eyebrow">YOUR LOCAL FORECAST</p>
+
+                    <h1 id="search-heading">
+                        What's the weather<br class="desktop-break">
+                        like today?
+                    </h1>
+
+                    <p class="intro-copy">
+                        Find the conditions in your city, wherever you are.
+                    </p>
+                </div>
+
+                <form
+                    class="search-form"
+                    action="/"
+                    method="POST"
+                    id="weather-search-form"
+                >
+                    <label class="visually-hidden" for="city-input">
+                        Enter a city name
+                    </label>
+
+                    <span class="search-symbol" aria-hidden="true">⌕</span>
+
+                    <input
+                        type="text"
+                        id="city-input"
+                        name="city"
+                        placeholder="Search a city..."
+                        value="{{ city or '' }}"
+                        maxlength="100"
+                        autocomplete="off"
+                        required
+                    >
+
+                    <button type="submit" class="search-button">
+                        Find weather
+                        <span aria-hidden="true">↗</span>
+                    </button>
+                </form>
+
+                <button
+                    type="button"
+                    class="location-button"
+                    id="location-button"
+                    aria-describedby="location-help"
+                >
+                    <span aria-hidden="true">⌖</span>
+                    Use my current location
+                </button>
+
+                <p class="form-help" id="location-help">
+                    Your location is only accessed when you select this option
+                    and grant browser permission.
+                </p>
+
+                <p
+                    class="interaction-message"
+                    id="interaction-message"
+                    role="status"
+                    aria-live="polite"
+                    hidden
+                ></p>
+
+                {% if error %}
+                <div class="error-message" role="alert">
+                    <span class="error-mark" aria-hidden="true">!</span>
+
+                    <div>
+                        <strong>We couldn't get that forecast.</strong>
+                        <p>{{ error }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+            </section>
+
+
+            {% if weather %}
+
+            <!-- Current weather overview -->
+            <section
+                class="weather-overview"
+                aria-labelledby="current-city"
+                id="weather-overview"
+                data-timezone="{{ weather.timezone or '' }}"
+            >
+                <div class="overview-topline">
+                    <span class="eyebrow">CURRENT CONDITIONS</span>
+
+                    <span class="observation-label">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        Latest available data
+                    </span>
+                </div>
+
+                <div class="current-weather-grid">
+
+                    <!-- Weather information -->
+                    <div class="current-weather-copy">
+                        <p class="location-label">
+                            {% if weather.region %}
+                                {{ weather.region }}{% if weather.country %}, {% endif %}
+                            {% endif %}
+                            {{ weather.country }}
+                        </p>
+
+                        <h2 id="current-city">{{ weather.city }}</h2>
+
+                        <p class="local-date" id="local-date">
+                            {{ weather.local_date or 'Local date unavailable' }}
+                        </p>
+
+                        <p class="local-time">
+                            Local time:
+                            <strong id="local-time">
+                                {{ weather.local_time or 'Unavailable' }}
+                            </strong>
+                        </p>
+
+                        <div class="temperature-row">
+                            <span class="current-temperature">
+                                {% if weather.temperature is not none %}
+                                    {{ weather.temperature|int
+                                       if weather.temperature == weather.temperature|int
+                                       else weather.temperature }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </span>
+
+                            <span class="temperature-unit">°C</span>
+                        </div>
+
+                        <p class="condition-description">
+                            {{ weather.condition }}
+                        </p>
+
+                        <p class="feels-like">
+                            Feels like
+                            <strong>
+                                {% if weather.feels_like is not none %}
+                                    {{ weather.feels_like }}°C
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </strong>
+                        </p>
+                    </div>
+
+
+                    <!-- Animated weather scene -->
+                    <div
+                        class="weather-scene scene-{{ weather.scene }}"
+                        id="weather-scene"
+                        data-scene="{{ weather.scene }}"
+                        data-is-day="{{ 'true' if weather.is_day else 'false' }}"
+                        role="img"
+                        aria-label="Weather in {{ weather.city }}: {{ weather.condition }}"
+                    >
+                        <div class="scene-sky" aria-hidden="true">
+
+                            <!-- Night sky stars -->
+                            <div class="scene-stars">
+                                <span class="star star-one"></span>
+                                <span class="star star-two"></span>
+                                <span class="star star-three"></span>
+                                <span class="star star-four"></span>
+                                <span class="star star-five"></span>
+                            </div>
+
+                            <!-- Sun and moon -->
+                            <div class="scene-sun"></div>
+                            <div class="scene-moon"></div>
+
+                            <!-- Moving clouds -->
+                            <div class="scene-cloud scene-cloud-back">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+
+                            <div class="scene-cloud scene-cloud-front">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+
+                            <!-- Mist -->
+                            <div class="scene-mist scene-mist-one"></div>
+                            <div class="scene-mist scene-mist-two"></div>
+
+                            <!-- Rain -->
+                            <div class="scene-rain">
+                                <span></span><span></span><span></span>
+                                <span></span><span></span><span></span>
+                                <span></span><span></span><span></span>
+                                <span></span><span></span><span></span>
+                            </div>
+
+                            <!-- Snow -->
+                            <div class="scene-snow">
+                                <span>·</span><span>·</span><span>·</span>
+                                <span>·</span><span>·</span><span>·</span>
+                                <span>·</span><span>·</span><span>·</span>
+                            </div>
+
+                            <!-- Lightning -->
+                            <div class="scene-lightning"></div>
+
+                            <!-- Landscape -->
+                            <div class="scene-horizon"></div>
+                            <div class="scene-land scene-land-back"></div>
+                            <div class="scene-land scene-land-front"></div>
+
+                        </div>
+
+                        <!-- Frosted-glass city label -->
+                        <div class="scene-location" aria-hidden="true">
+                            <span class="scene-location-label">WEATHER IN</span>
+
+                            <span class="scene-location-city">
+                                {{ weather.city }}
+                            </span>
+
+                            <span class="scene-location-condition">
+                                {{ weather.condition }}
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+
+            <!-- Weather measurements -->
+            <section
+                class="details-section"
+                aria-labelledby="details-heading"
+            >
+                <div class="section-heading-row">
+                    <div>
+                        <p class="eyebrow">THE DETAILS</p>
+                        <h2 id="details-heading">Weather at a glance</h2>
+                    </div>
+
+                    <span class="unit-note">Metric units</span>
+                </div>
+
+                <div class="details-grid">
+
+                    <!-- Humidity -->
+                    <article class="detail-card">
+                        <div class="detail-card-top">
+                            <span
+                                class="detail-icon humidity-icon"
+                                aria-hidden="true"
+                            >◌</span>
+
+                            <span class="detail-label">HUMIDITY</span>
+                        </div>
+
+                        <p class="detail-value">
+                            {% if weather.humidity is not none %}
+                                {{ weather.humidity }}<span>%</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </p>
+
+                        <p class="detail-description">
+                            Relative humidity
+                        </p>
+                    </article>
+
+
+                    <!-- Wind speed -->
+                    <article class="detail-card">
+                        <div class="detail-card-top">
+                            <span
+                                class="detail-icon wind-icon"
+                                aria-hidden="true"
+                            >≋</span>
+
+                            <span class="detail-label">WIND SPEED</span>
+                        </div>
+
+                        <p class="detail-value">
+                            {% if weather.wind_speed is not none %}
+                                {{ weather.wind_speed }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                            <span class="detail-unit">km/h</span>
+                        </p>
+
+                        <p class="detail-description">
+                            {% if weather.wind_direction is not none %}
+                                Direction:
+                                <span id="wind-direction">
+                                    {{ weather.wind_direction }}°
+                                </span>
+                            {% else %}
+                                Current wind
+                            {% endif %}
+                        </p>
+                    </article>
+
+
+                    <!-- Precipitation -->
+                    <article class="detail-card">
+                        <div class="detail-card-top">
+                            <span
+                                class="detail-icon rain-icon"
+                                aria-hidden="true"
+                            >⌁</span>
+
+                            <span class="detail-label">PRECIPITATION</span>
+                        </div>
+
+                        <p class="detail-value">
+                            {% if weather.precipitation is not none %}
+                                {{ weather.precipitation }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                            <span class="detail-unit">mm</span>
+                        </p>
+
+                        <p class="detail-description">
+                            Current precipitation
+                        </p>
+                    </article>
+
+
+                    <!-- Feels like -->
+                    <article class="detail-card">
+                        <div class="detail-card-top">
+                            <span
+                                class="detail-icon temperature-icon"
+                                aria-hidden="true"
+                            >↕</span>
+
+                            <span class="detail-label">FEELS LIKE</span>
+                        </div>
+
+                        <p class="detail-value">
+                            {% if weather.feels_like is not none %}
+                                {{ weather.feels_like }}<span>°C</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </p>
+
+                        <p class="detail-description">
+                            Apparent temperature
+                        </p>
+                    </article>
+
+                </div>
+            </section>
+
+
+            <!-- Sunrise and sunset -->
+            <section
+                class="sun-section"
+                aria-labelledby="sun-heading"
+            >
+                <div class="sun-section-heading">
+                    <p class="eyebrow">DAYLIGHT</p>
+                    <h2 id="sun-heading">The shape of the day</h2>
+                </div>
+
+                <div class="sun-times">
+
+                    <!-- Sunrise -->
+                    <article class="sun-time-card">
+                        <div
+                            class="sun-symbol sunrise-symbol"
+                            aria-hidden="true"
+                        >
+                            <span></span>
+                        </div>
+
+                        <div>
+                            <p class="sun-time-label">SUNRISE</p>
+
+                            <p class="sun-time-value">
+                                {{ weather.sunrise or 'Unavailable' }}
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- Sun path -->
+                    <div class="sun-path" aria-hidden="true">
+                        <span class="sun-path-line"></span>
+                        <span class="sun-path-marker"></span>
+                    </div>
+
+                    <!-- Sunset -->
+                    <article class="sun-time-card sunset-card">
+                        <div
+                            class="sun-symbol sunset-symbol"
+                            aria-hidden="true"
+                        >
+                            <span></span>
+                        </div>
+
+                        <div>
+                            <p class="sun-time-label">SUNSET</p>
+
+                            <p class="sun-time-value">
+                                {{ weather.sunset or 'Unavailable' }}
+                            </p>
+                        </div>
+                    </article>
+
+                </div>
+
+                <p class="sun-note">
+                    Times are shown in the location's local time.
+                </p>
+            </section>
+
+
+            <!-- Six-day forecast -->
+            <section
+                class="forecast-section"
+                aria-labelledby="forecast-heading"
+            >
+                <div class="section-heading-row">
+                    <div>
+                        <p class="eyebrow">LOOKING AHEAD</p>
+                        <h2 id="forecast-heading">The next six days</h2>
+                    </div>
+
+                    <span class="forecast-note">
+                        Today + 5 days
+                    </span>
+                </div>
+
+                <div class="forecast-grid">
+
+                    {% for day in weather.forecast %}
+
+                    <article
+                        class="forecast-card{% if day.is_today %} forecast-today forecast-selected{% endif %}"
+                        role="button"
+                        tabindex="0"
+                        aria-pressed="{{ 'true' if day.is_today else 'false' }}"
+                        aria-label="Show forecast for {{ day.day }}: {{ day.condition }}"
+                        data-date="{{ day.date }}"
+                        data-day="{{ day.day }}"
+                        data-display-date="{{ day.display_date }}"
+                        data-condition="{{ day.condition }}"
+                        data-scene="{{ day.scene }}"
+                        data-high="{{ day.temperature_max if day.temperature_max is not none else '' }}"
+                        data-low="{{ day.temperature_min if day.temperature_min is not none else '' }}"
+                        data-precipitation="{{ day.precipitation_probability if day.precipitation_probability is not none else '' }}"
+                        data-is-today="{{ 'true' if day.is_today else 'false' }}"
+                    >
+                        <div class="forecast-date">
+                            <p class="forecast-day">
+                                {% if day.is_today %}
+                                    Today
+                                {% else %}
+                                    {{ day.day }}
+                                {% endif %}
+                            </p>
+
+                            <p class="forecast-calendar-date">
+                                {{ day.display_date }}
+                            </p>
+                        </div>
+
+                        <div
+                            class="forecast-weather-icon forecast-icon-{{ day.scene }}"
+                            aria-hidden="true"
+                        >
+                            <span class="mini-sun"></span>
+                            <span class="mini-cloud"></span>
+                            <span class="mini-rain"></span>
+                            <span class="mini-snow"></span>
+                        </div>
+
+                        <p class="forecast-condition">
+                            {{ day.condition }}
+                        </p>
+
+                        <div class="forecast-temperatures">
+                            <span class="forecast-high">
+                                {% if day.temperature_max is not none %}
+                                    {{ day.temperature_max|round|int }}°
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </span>
+
+                            <span class="forecast-low">
+                                {% if day.temperature_min is not none %}
+                                    {{ day.temperature_min|round|int }}°
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <p class="forecast-rain-chance">
+                            {% if day.precipitation_probability is not none %}
+                                Rain chance:
+                                <strong>
+                                    {{ day.precipitation_probability }}%
+                                </strong>
+                            {% else %}
+                                Rain chance: —
+                            {% endif %}
+                        </p>
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+            </section>
+
+
+            {% else %}
+
+            <!-- Welcome screen before a city is searched -->
+            <section
+                class="welcome-section"
+                aria-labelledby="welcome-heading"
+            >
+                <div class="welcome-copy">
+                    <p class="eyebrow">A LITTLE CLOSER TO THE WEATHER</p>
+
+                    <h2 id="welcome-heading">
+                        Every place has<br>
+                        its own kind of sky.
+                    </h2>
+
+                    <p>
+                        Search for a city to explore its current conditions,
+                        the day's sunlight, and the forecast for the days ahead.
+                    </p>
+                </div>
+
+                <div class="welcome-sky" aria-hidden="true">
+                    <div class="welcome-sun"></div>
+                    <div class="welcome-cloud welcome-cloud-one"></div>
+                    <div class="welcome-cloud welcome-cloud-two"></div>
+                    <div class="welcome-hill welcome-hill-one"></div>
+                    <div class="welcome-hill welcome-hill-two"></div>
+                </div>
+            </section>
+
+            {% endif %}
+
+
+            <!-- Weather data attribution -->
+
+
+        </main>
+
+
+        <!-- Footer -->
+        <footer class="site-footer">
+
+            <div class="footer-main">
+                <a
+                    class="footer-brand"
+                    href="/"
+                    aria-label="Weather Journal home"
+                >
+                    <span class="footer-brand-mark" aria-hidden="true">
+                        W.
+                    </span>
+
+                    <span>Weather Journal</span>
+                </a>
+
+                <p class="footer-description">
+                    A little closer to the sky. Current conditions and forecasts,
+                    thoughtfully brought together.
+                </p>
+            </div>
+
+            <div class="footer-contact">
+                <span class="footer-contact-label">HAVE A QUESTION?</span>
+
+                <a
+                    href="mailto:altafgazi584@gmail.com"
+                    aria-label="Contact Weather Journal by email"
+                >
+                    Get in touch
+                    <span aria-hidden="true">↗</span>
+                </a>
+
+                <span class="footer-contact-note">
+                    We'd be glad to hear from you.
+                </span>
+            </div>
+
+            <div class="footer-bottom">
+                <span>
+                    &copy; <span id="current-year">2026</span> Weather Journal
+                </span>
+
+                <span>Weather data by Open-Meteo</span>
+            </div>
+
+        </footer>
+
+    </div>
+
+
+    <!-- JavaScript: search, location, and local clock -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("weather-search-form");
+            const searchButton = form ? form.querySelector('button[type="submit"]') : null;
+            const cityInput = document.getElementById("city-input");
+            const locationButton = document.getElementById("location-button");
+            const message = document.getElementById("interaction-message");
+            const currentYear = document.getElementById("current-year");
+            const weatherRoot = document.getElementById("weather-overview");
+            const scene = document.getElementById("weather-scene");
+            const localTime = document.getElementById("local-time");
+            const localDate = document.getElementById("local-date");
+            let currentWeather = null;
+            let selectedForecast = null;
+            let clockTimer = null;
+
+            if (currentYear) currentYear.textContent = new Date().getFullYear();
+
+            function showMessage(text, isError) {
+                if (!message) return;
+                message.textContent = text;
+                message.classList.toggle("message-error", Boolean(isError));
+                message.hidden = false;
+            }
+            function clearMessage() {
+                if (!message) return;
+                message.textContent = "";
+                message.hidden = true;
+                message.classList.remove("message-error");
+            }
+            function mobileScrollToWeather() {
+                // A successful city search returns a fresh server-rendered page. Scroll on
+                // both desktop and mobile, after layout settles so the browser's initial
+                // scroll restoration or late layout changes do not cancel the movement.
+                if (!weatherRoot) return;
+                const scroll = () => {
+                    const top = weatherRoot.getBoundingClientRect().top + window.scrollY - 18;
+                    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+                };
+                requestAnimationFrame(() => requestAnimationFrame(scroll));
+                window.setTimeout(scroll, 500);
+                window.setTimeout(scroll, 1100);
+            }
+            function fmt(value, suffix = "") {
+                if (value === null || value === undefined || value === "" || Number.isNaN(Number(value))) return "—";
+                const n = Number(value);
+                return `${Number.isInteger(n) ? n : n.toFixed(1)}${suffix}`;
+            }
+            function setText(selector, value) {
+                const el = document.querySelector(selector);
+                if (el) el.textContent = value == null || value === "" ? "—" : value;
+            }
+            function setDetailCard(index, label, value, description) {
+                const card = document.querySelectorAll(".details-grid .detail-card")[index];
+                if (!card) return;
+                const labelEl = card.querySelector(".detail-label");
+                const valueEl = card.querySelector(".detail-value");
+                const descriptionEl = card.querySelector(".detail-description");
+                if (labelEl) labelEl.textContent = label;
+                if (valueEl) valueEl.textContent = value;
+                if (descriptionEl) descriptionEl.textContent = description;
+            }
+            function restoreCurrentDetailCards(weather) {
+                const cards = document.querySelectorAll(".details-grid .detail-card");
+                if (cards.length < 4) return;
+                const labels = ["HUMIDITY", "WIND SPEED", "PRECIPITATION", "FEELS LIKE"];
+                const values = [fmt(weather.humidity, "%"), fmt(weather.wind_speed), fmt(weather.precipitation, " mm"), fmt(weather.feels_like, "°C")];
+                const descriptions = ["Relative humidity", weather.wind_direction != null ? `Direction: ${weather.wind_direction}°` : "Current wind", "Current precipitation", "Apparent temperature"];
+                cards.forEach((card, i) => {
+                    const label = card.querySelector(".detail-label");
+                    const value = card.querySelector(".detail-value");
+                    const desc = card.querySelector(".detail-description");
+                    if (label) label.textContent = labels[i];
+                    if (value) value.textContent = values[i];
+                    if (desc) desc.textContent = descriptions[i];
+                });
+            }
+            function updateScene(sceneName, isDay, city, condition) {
+                if (!scene) return;
+                scene.className = `weather-scene scene-${sceneName || "cloudy"}`;
+                scene.dataset.scene = sceneName || "cloudy";
+                scene.dataset.isDay = isDay ? "true" : "false";
+                if (!isDay) scene.classList.add("night-scene");
+                scene.setAttribute("aria-label", `Weather in ${city || "your location"}: ${condition || "conditions unavailable"}`);
+                const cityLabel = scene.querySelector(".scene-location-city");
+                const conditionLabel = scene.querySelector(".scene-location-condition");
+                if (cityLabel) cityLabel.textContent = city || "Your Location";
+                if (conditionLabel) conditionLabel.textContent = condition || "Weather unavailable";
+            }
+            function updateSunTimes(weather) {
+                const values = document.querySelectorAll(".sun-time-value");
+                if (values[0]) values[0].textContent = weather.sunrise || "Unavailable";
+                if (values[1]) values[1].textContent = weather.sunset || "Unavailable";
+            }
+            function updateForecastCards(weather) {
+                const cards = Array.from(document.querySelectorAll(".forecast-card"));
+                (weather.forecast || []).forEach((day, index) => {
+                    let card = cards[index];
+                    if (!card) return;
+                    card.dataset.date = day.date || "";
+                    card.dataset.day = day.day || "Forecast";
+                    card.dataset.displayDate = day.display_date || "";
+                    card.dataset.condition = day.condition || "Unknown";
+                    card.dataset.scene = day.scene || "cloudy";
+                    card.dataset.high = day.temperature_max == null ? "" : day.temperature_max;
+                    card.dataset.low = day.temperature_min == null ? "" : day.temperature_min;
+                    card.dataset.precipitation = day.precipitation_probability == null ? "" : day.precipitation_probability;
+                    card.dataset.isToday = day.is_today ? "true" : "false";
+                    const dayEl = card.querySelector(".forecast-day");
+                    const dateEl = card.querySelector(".forecast-calendar-date");
+                    const iconEl = card.querySelector(".forecast-weather-icon");
+                    const conditionEl = card.querySelector(".forecast-condition");
+                    const highEl = card.querySelector(".forecast-high");
+                    const lowEl = card.querySelector(".forecast-low");
+                    const rainEl = card.querySelector(".forecast-rain-chance");
+                    if (dayEl) dayEl.textContent = day.is_today ? "Today" : (day.day || "Forecast");
+                    if (dateEl) dateEl.textContent = day.display_date || "";
+                    if (iconEl) iconEl.className = `forecast-weather-icon forecast-icon-${day.scene || "cloudy"}`;
+                    if (conditionEl) conditionEl.textContent = day.condition || "Unknown";
+                    if (highEl) highEl.textContent = day.temperature_max == null ? "—" : `${Math.round(Number(day.temperature_max))}°`;
+                    if (lowEl) lowEl.textContent = day.temperature_min == null ? "—" : `${Math.round(Number(day.temperature_min))}°`;
+                    if (rainEl) rainEl.innerHTML = day.precipitation_probability == null ? "Rain chance: —" : `Rain chance: <strong>${Number(day.precipitation_probability)}%</strong>`;
+                });
+                bindForecastCards();
+            }
+            function showCurrentWeather(weather, shouldScroll) {
+                currentWeather = weather;
+                selectedForecast = null;
+                if (!weatherRoot) return;
+                weatherRoot.dataset.timezone = weather.timezone || "";
+                setText("#current-city", weather.city || "Your Location");
+                const locationLabel = document.querySelector(".location-label");
+                if (locationLabel) locationLabel.textContent = [weather.region, weather.country].filter(Boolean).join(", ");
+                setText("#local-date", weather.local_date || "Local date unavailable");
+                setText("#local-time", weather.local_time || "Unavailable");
+                setText(".current-temperature", fmt(weather.temperature));
+                setText(".condition-description", weather.condition || "Conditions unavailable");
+                const feels = document.querySelector(".feels-like strong");
+                if (feels) feels.textContent = fmt(weather.feels_like, "°C");
+                const heading = document.querySelector(".overview-topline .eyebrow");
+                if (heading) heading.textContent = "CURRENT CONDITIONS";
+                restoreCurrentDetailCards(weather);
+                updateSunTimes(weather);
+                updateScene(weather.scene, Boolean(weather.is_day), weather.city, weather.condition);
+                updateForecastCards(weather);
+                if (clockTimer) clearInterval(clockTimer);
+                if (weather.timezone) {
+                    updateClock(weather.timezone);
+                    clockTimer = setInterval(() => updateClock(weather.timezone), 60000);
+                }
+                if (shouldScroll) mobileScrollToWeather();
+            }
+            function selectForecast(card) {
+                if (!currentWeather || !card) return;
+                selectedForecast = card;
+                document.querySelectorAll(".forecast-card").forEach(item => {
+                    const active = item === card;
+                    item.classList.toggle("forecast-selected", active);
+                    item.setAttribute("aria-pressed", active ? "true" : "false");
+                });
+                const high = card.dataset.high;
+                const low = card.dataset.low;
+                const condition = card.dataset.condition || "Forecast";
+                const dayName = card.dataset.day || "Selected day";
+                const sceneName = card.dataset.scene || "cloudy";
+                const selectedDate = card.dataset.displayDate || "";
+                const heading = document.querySelector(".overview-topline .eyebrow");
+                if (heading) heading.textContent = `FORECAST · ${dayName.toUpperCase()}`;
+                setText("#current-city", currentWeather.city || "Your Location");
+                setText("#local-date", selectedDate || card.dataset.date || dayName);
+                setText(".current-temperature", high === "" ? "—" : fmt(high));
+                setText(".condition-description", condition);
+                const feels = document.querySelector(".feels-like strong");
+                if (feels) feels.textContent = low === "" ? "—" : `${fmt(low)}°C`;
+                const feelsLabel = document.querySelector(".feels-like");
+                if (feelsLabel && feelsLabel.firstChild) feelsLabel.firstChild.textContent = "Forecast low ";
+                setDetailCard(0, "RAIN CHANCE", card.dataset.precipitation === "" ? "—" : fmt(card.dataset.precipitation, "%"), "Maximum daily probability");
+                setDetailCard(1, "HIGH / LOW", `${high === "" ? "—" : fmt(high, "°")} / ${low === "" ? "—" : fmt(low, "°")}`, "Forecast temperatures");
+                setDetailCard(2, "CONDITION", condition, selectedDate || dayName);
+                setDetailCard(3, "RAIN CHANCE", card.dataset.precipitation === "" ? "—" : fmt(card.dataset.precipitation, "%"), "Daily precipitation probability");
+                updateScene(sceneName, true, currentWeather.city, condition);
+                if (weatherRoot) weatherRoot.classList.remove("weather-switching");
+                void weatherRoot.offsetWidth;
+                if (weatherRoot) {
+                    weatherRoot.classList.add("weather-switching");
+                    // Forecast selection changes the main weather panel above the cards;
+                    // bring that updated information into view automatically.
+                    window.setTimeout(() => {
+                        weatherRoot.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 80);
+                }
+            }
+            function bindForecastCards() {
+                document.querySelectorAll(".forecast-card").forEach(card => {
+                    if (card.dataset.bound === "true") return;
+                    card.dataset.bound = "true";
+                    card.addEventListener("click", () => selectForecast(card));
+                    card.addEventListener("keydown", event => {
+                        if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            selectForecast(card);
+                        }
+                    });
+                });
+            }
+            function updateClock(timezone) {
+                try {
+                    const now = new Date();
+                    if (localTime) localTime.textContent = new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: timezone }).format(now);
+                    if (localDate && !selectedForecast) localDate.textContent = new Intl.DateTimeFormat("en", { weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: timezone }).format(now);
+                } catch (_) { /* Keep the server-rendered values if timezone is invalid. */ }
+            }
+
+            if (form && searchButton) {
+                form.addEventListener("submit", function (event) {
+                    const city = cityInput ? cityInput.value.trim() : "";
+                    if (!city) {
+                        event.preventDefault();
+                        showMessage("Please enter a city name.", true);
+                        return;
+                    }
+                    clearMessage();
+                    searchButton.disabled = true;
+                    searchButton.textContent = "Finding weather…";
+                });
+            }
+
+            if (locationButton) {
+                locationButton.addEventListener("click", function () {
+                    clearMessage();
+                    if (!("geolocation" in navigator)) {
+                        showMessage("Your browser doesn't support location detection. Please search for your city instead.", true);
+                        return;
+                    }
+                    locationButton.disabled = true;
+                    locationButton.textContent = "Finding your location…";
+                    showMessage("Please allow location access in your browser.", false);
+                    navigator.geolocation.getCurrentPosition(async function (position) {
+                        try {
+                            showMessage("Getting the weather for your location…", false);
+                            const params = new URLSearchParams({ latitude: String(position.coords.latitude), longitude: String(position.coords.longitude) });
+                            // On the welcome screen there is no dashboard DOM to update yet.
+                            // Render the dashboard from Flask with the permitted coordinates.
+                            if (!document.getElementById("weather-overview")) {
+                                window.location.href = "/current-location?" + params.toString();
+                                return;
+                            }
+                            const response = await fetch("/api/weather?" + params.toString(), { headers: { "Accept": "application/json" } });
+                            const result = await response.json();
+                            if (!response.ok || !result.success || !result.weather) throw new Error(result.error || "Unable to retrieve local weather.");
+                            showCurrentWeather(result.weather, true);
+                            sessionStorage.setItem("currentLocationWeather", JSON.stringify(result.weather));
+                            showMessage("Weather updated for your current location.", false);
+                            window.dispatchEvent(new CustomEvent("weather:location-loaded", { detail: result.weather }));
+                        } catch (error) {
+                            showMessage(error.message || "Couldn't retrieve your local weather. Please search for a city instead.", true);
+                        } finally {
+                            locationButton.disabled = false;
+                            locationButton.innerHTML = '<span aria-hidden="true">⌖</span> Use my current location';
+                        }
+                    }, function (error) {
+                        let errorMessage = "We couldn't access your location. You can search for a city instead.";
+                        if (error.code === 1) errorMessage = "Location permission was denied. Allow location access in your browser or search for a city.";
+                        else if (error.code === 3) errorMessage = "Location detection timed out. Please try again or search for a city.";
+                        showMessage(errorMessage, true);
+                        locationButton.disabled = false;
+                        locationButton.innerHTML = '<span aria-hidden="true">⌖</span> Use my current location';
+                    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+                });
+            }
+
+            bindForecastCards();
+            if (weatherRoot && scene) {
+                const initial = {
+                    city: document.getElementById("current-city")?.textContent.trim() || "",
+                    region: document.querySelector(".location-label")?.textContent.trim() || "",
+                    country: "",
+                    temperature: document.querySelector(".current-temperature")?.textContent.trim() || "—",
+                    feels_like: document.querySelector(".feels-like strong")?.textContent.replace("°C", "").trim() || null,
+                    humidity: document.querySelectorAll(".detail-value")[0]?.textContent.trim() || null,
+                    wind_speed: document.querySelectorAll(".detail-value")[1]?.textContent.trim() || null,
+                    wind_direction: null,
+                    precipitation: document.querySelectorAll(".detail-value")[2]?.textContent.trim() || null,
+                    condition: document.querySelector(".condition-description")?.textContent.trim() || "",
+                    scene: scene.dataset.scene || "cloudy",
+                    is_day: scene.dataset.isDay === "true",
+                    timezone: weatherRoot.dataset.timezone || "",
+                    sunrise: document.querySelectorAll(".sun-time-value")[0]?.textContent.trim() || "",
+                    sunset: document.querySelectorAll(".sun-time-value")[1]?.textContent.trim() || "",
+                    forecast: Array.from(document.querySelectorAll(".forecast-card")).map(card => ({
+                        date: card.dataset.date, day: card.dataset.day, display_date: card.dataset.displayDate,
+                        condition: card.dataset.condition, scene: card.dataset.scene,
+                        temperature_max: card.dataset.high === "" ? null : card.dataset.high,
+                        temperature_min: card.dataset.low === "" ? null : card.dataset.low,
+                        precipitation_probability: card.dataset.precipitation === "" ? null : card.dataset.precipitation,
+                        is_today: card.dataset.isToday === "true"
+                    }))
+                };
+                currentWeather = initial;
+                if (initial.timezone) {
+                    updateClock(initial.timezone);
+                    clockTimer = setInterval(() => updateClock(initial.timezone), 60000);
+                }
+                mobileScrollToWeather();
+            }
+        });
+    </script>
+
+</body>
+</html>
